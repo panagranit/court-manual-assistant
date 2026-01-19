@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd rag && python build_index.py",
+  "buildCommand": "python rag/build_index.py",
   "builds": [
     {
       "src": "api/**/*.py",
