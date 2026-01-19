@@ -6,7 +6,6 @@ Compatible with Vercel Python runtime
 
 import json
 import os
-from http.server import BaseHTTPRequestHandler
 from openai import OpenAI
 import faiss
 import numpy as np
@@ -29,22 +28,24 @@ def load_resources():
     if _index is None or _chunks is None:
         # Get paths relative to this file
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        rag_dir = os.path.join(os.path.dirname(script_dir), "rag")
+        project_root = os.path.dirname(script_dir)
         
-        index_path = os.path.join(rag_dir, "manual.index")
-        chunks_path = os.path.join(rag_dir, "chunks.json")
+        index_path = os.path.join(project_root, "rag", "manual.index")
+        chunks_path = os.path.join(project_root, "rag", "chunks.json")
         
         # Load FAISS index
         _index = faiss.read_index(index_path)
         
         # Load chunks
-        with open(chunks_path, "r", encoding="utf-8") as f:
+        with open(chunks_path, 'r', encoding='utf-8') as f:
             _chunks = json.load(f)
     
     return _index, _chunks
 
 def create_query_embedding(query_text):
-    """Create embedding for user query"""
+    """
+    Create embedding for query text using OpenAI
+    """
     response = client.embeddings.create(
         model="text-embedding-3-small",
         input=[query_text]
@@ -106,51 +107,47 @@ Manual excerpts:
     
     return response.choices[0].message.content
 
-class handler(BaseHTTPRequestHandler):
+def handler(request):
     """Vercel serverless function handler"""
-    
-    def do_POST(self):
-        """Handle POST requests to /api/chat"""
-        try:
-            # Read request body
-            content_length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(content_length)
-            
-            # Parse JSON
-            data = json.loads(body.decode('utf-8'))
-            user_message = data.get("message", "").strip()
-            
-            if not user_message:
-                self.send_error(400, "Missing 'message' field")
-                return
-            
-            # Retrieve relevant chunks
-            relevant_chunks = retrieve_relevant_chunks(user_message, top_k=4)
-            
-            # Generate answer
-            answer = generate_answer(user_message, relevant_chunks)
-            
-            # Send response
-            response_data = {"reply": answer}
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+    try:
+        # Parse request body
+        if hasattr(request, 'body'):
+            data = json.loads(request.body.decode('utf-8'))
+        else:
+            # For Vercel, request body might be in different format
+            data = request.get_json() if request.is_json else {}
         
-        except Exception as e:
-            error_message = f"Server error: {str(e)}"
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": error_message}).encode('utf-8'))
+        user_message = data.get("message", "").strip()
+        
+        if not user_message:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({"error": "Missing 'message' field"})
+            }
+        
+        # Retrieve relevant chunks
+        relevant_chunks = retrieve_relevant_chunks(user_message, top_k=4)
+        
+        # Generate answer
+        answer = generate_answer(user_message, relevant_chunks)
+        
+        # Send response
+        response_data = {"reply": answer}
+        
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps(response_data)
+        }
     
-    def do_OPTIONS(self):
-        """Handle CORS preflight requests"""
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
+    except Exception as e:
+        error_message = f"Server error: {str(e)}"
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({"error": error_message})
+        }
