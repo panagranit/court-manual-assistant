@@ -28,22 +28,24 @@ def load_resources():
     if _index is None or _chunks is None:
         # Get paths relative to this file
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        rag_dir = os.path.join(os.path.dirname(script_dir), "rag")
+        project_root = os.path.dirname(script_dir)
         
-        index_path = os.path.join(rag_dir, "manual.index")
-        chunks_path = os.path.join(rag_dir, "chunks.json")
+        index_path = os.path.join(project_root, "rag", "manual.index")
+        chunks_path = os.path.join(project_root, "rag", "chunks.json")
         
         # Load FAISS index
         _index = faiss.read_index(index_path)
         
         # Load chunks
-        with open(chunks_path, "r", encoding="utf-8") as f:
+        with open(chunks_path, 'r', encoding='utf-8') as f:
             _chunks = json.load(f)
     
     return _index, _chunks
 
 def create_query_embedding(query_text):
-    """Create embedding for user query"""
+    """
+    Create embedding for query text using OpenAI
+    """
     response = client.embeddings.create(
         model="text-embedding-3-small",
         input=[query_text]
