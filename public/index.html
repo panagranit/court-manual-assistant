@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Court Clerk Manual Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #718096;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .chat-container {
+            margin-bottom: 20px;
+        }
+
+        /* Add any additional styles here if needed */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Court Clerk Manual Assistant</h1>
+        <div class="subtitle">Your assistant for navigating the court clerk manual.</div>
+        <div class="chat-container">
+            <input type="text" id="userInput" placeholder="Type your question here..." style="width:70%;padding:8px;">
+            <button id="sendBtn" style="padding:8px 16px;margin-left:8px;">Send</button>
+            <div id="response" style="margin-top:24px;color:#2d3748;"></div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('sendBtn').onclick = async function() {
+            const input = document.getElementById('userInput').value.trim();
+            if (!input) return;
+            document.getElementById('response').textContent = 'Loading...';
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: input })
+                });
+                const data = await res.json();
+                document.getElementById('response').textContent = data.reply || data.error || 'No response.';
+            } catch (err) {
+                document.getElementById('response').textContent = 'Error: ' + err;
+            }
+        };
+    </script>
+</body>
+</html>
