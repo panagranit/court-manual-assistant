@@ -1,10 +1,28 @@
-"routes": [
-  {
-    "src": "/api/(.*)",
-    "dest": "/api/index.py"
-  },
-  {
-    "src": "/(.*)",
-    "dest": "/public/$1"
+{
+  "version": 2,
+  "buildCommand": "python rag/build_index.py",
+  "builds": [
+    {
+      "src": "api/**/*.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/chat",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
+  ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 30
+    }
   }
-]
+}
